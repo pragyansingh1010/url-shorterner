@@ -245,6 +245,159 @@
 
     </div>
 
+    
+    <script>
+        let historyList =
+            JSON.parse(localStorage.getItem("urlHistory")) || [];
+
+        displayHistory();
+
+        async function shortenURL() {
+
+            let input =
+                document.getElementById("urlInput");
+
+            let url = input.value.trim();
+
+            let error =
+                document.getElementById("error");
+
+            let result =
+                document.getElementById("result");
+
+            let loading =
+                document.getElementById("loading");
+
+            error.style.display = "none";
+            result.style.display = "none";
+
+            if (url === "") {
+                showError("Please enter a URL.");
+                return;
+            }
+
+            try {
+                new URL(url);
+            }
+            catch {
+                showError("Please enter a valid URL.");
+                return;
+            }
+
+            loading.style.display = "block";
+
+            try {
+
+                let response = await fetch(
+                    "https://is.gd/create.php?format=json&url=" +
+                    encodeURIComponent(url)
+                );
+
+                let data = await response.json();
+
+                loading.style.display = "none";
+
+                if (data.shorturl) {
+
+                    document.getElementById("shortUrl")
+                        .textContent = data.shorturl;
+
+                    result.style.display = "block";
+
+                    historyList.unshift({
+                        original: url,
+                        short: data.shorturl
+                    });
+
+                    historyList =
+                        historyList.slice(0, 5);
+
+                    localStorage.setItem(
+                        "urlHistory",
+                        JSON.stringify(historyList)
+                    );
+
+                    displayHistory();
+
+                }
+                else {
+                    showError(
+                        "Unable to shorten this URL."
+                    );
+                }
+
+            }
+            catch {
+
+                loading.style.display = "none";
+
+                showError(
+                    "Something went wrong. Please try again."
+                );
+            }
+        }
+
+        function showError(message) {
+
+            let error =
+                document.getElementById("error");
+
+            error.textContent = message;
+            error.style.display = "block";
+        }
+
+        function copyURL() {
+
+            let url =
+                document.getElementById("shortUrl")
+                    .textContent;
+
+            navigator.clipboard.writeText(url);
+
+            let button =
+                document.getElementById("copyButton");
+
+            button.textContent = "Copied!";
+
+            setTimeout(function() {
+                button.textContent = "Copy";
+            }, 1500);
+        }
+
+        function displayHistory() {
+
+            let history =
+                document.getElementById("history");
+
+            history.innerHTML = "<h3>Recent URLs</h3>";
+
+            historyList.forEach(function(item) {
+
+                let div =
+                    document.createElement("div");
+
+                div.className = "history-item";
+
+                div.innerHTML =
+                    "<b>" +
+                    item.short +
+                    "</b><br>" +
+                    item.original;
+
+                history.appendChild(div);
+            });
+        }
+
+        document
+            .getElementById("urlInput")
+            .addEventListener("keydown", function(event) {
+
+                if (event.key === "Enter") {
+                    shortenURL();
+                }
+
+            });
+    </script>
 
 </body>
 </html>
